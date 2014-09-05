@@ -1,19 +1,54 @@
 ;Commandline parameters to pass in
-;1st - class room
-;e.g. "howe1344"
+;1st - building (make sure it's lowercase)
+;e.g. "howe"
+;2nd - classroom number
+;e.g. "1344"
 
 ;https://www.autoitscript.com/autoit3/docs/keywords/include.htm
-#include "passwords.au3"
+#include "passwords.au3" ;ELO login passwords
+
+;These includes are for GUI/UI constants
+#include <GUIConstantsEx.au3>
+#include <WindowsConstants.au3>
+#include <EditConstants.au3>
 
 ;Constants
-Global $PANOPTO = "C:\Program Files (x86)\Panopto\Focus Recorder\Recorder.exe"
-Global $CHROME = "C:\Users\elocoder\AppData\Local\Google\Chrome\Application\chrome.exe"
-Global $FIREFOX = "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
-Global $WEBEX_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=7"
-Global $SESSION_MANAGER_LINK = "https://sws.elo.iastate.edu/session-manager/"
-Global $ECHO_LINK = "https://" & $CmdLine[1] & "hd.engineering.iastate.edu:8443/advanced"
+Global Const $BUILDING = $CmdLine[1]
+Global Const $ROOM = $CmdLine[2]
+Global Const $PANOPTO = "C:\Program Files (x86)\Panopto\Focus Recorder\Recorder.exe"
+Global Const $CHROME = "C:\Users\elocoder\AppData\Local\Google\Chrome\Application\chrome.exe"
+Global Const $FIREFOX = "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
+Global Const $WEBEX_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=7"
+Global Const $SESSION_MANAGER_LINK = "https://sws.elo.iastate.edu/session-manager/"
+Global Const $ECHO_LINK = "https://" & $BUILDING & $ROOM & "hd.engineering.iastate.edu:8443/advanced"
 ;Settings
 Opt("WinTitleMatchMode", 2) ;matches partial substrings when matching titles
+
+;https://www.autoitscript.com/autoit3/docs/guiref/GUIRef.htm
+;https://www.autoitscript.com/autoit3/docs/functions/GUICreate.htm
+;https://www.autoitscript.com/autoit3/docs/functions/GUICtrlCreateInput.htm
+Local $gui = GUICreate("Session Manager Login", 300, 300) ;by default it's centered
+GUICtrlCreateLabel("Enter your session manager login", 10, 10)
+GUICtrlCreateLabel("ISU NetID:", 10, 30)
+Local $username_input = GUICtrlCreateInput("", 80, 30, 120, 20)
+GUICtrlCreateLabel("Password:", 10, 60)
+Local $password_input = GUICtrlCreateInput("", 80, 60, 120, 20, $ES_PASSWORD)
+Local $idLogin = GUICtrlCreateButton("Login", 70, 100, 60)
+GUISetState(@SW_SHOW, $gui)
+
+;Loop until the user enters session manager login info or just exits
+While True
+	Switch GUIGetMsg()
+		Case $GUI_EVENT_CLOSE
+			GUIDelete($gui)
+			ExitLoop
+		Case $idLogin
+			$username = GUICtrlRead($username_input)
+			$password = GUICtrlRead($password_input)
+			GUIDelete($gui)
+			ExitLoop
+	EndSwitch
+WEnd
 
 ;https://www.autoitscript.com/autoit3/docs/functions/ProgressOn.htm
 ProgressOn("Startup", "Startup", "", @desktopwidth/2, @desktopheight/2)
@@ -21,7 +56,7 @@ ProgressOn("Startup", "Startup", "", @desktopwidth/2, @desktopheight/2)
 ; Disable user input from the mouse and keyboard.
 BlockInput(1)
 
-ProgressSet(10, "Starting Panopto...")
+ProgressSet(15, "Starting Panopto...")
 
 ; Run Panopto application
 ; TODO: check return value
@@ -29,7 +64,7 @@ Run($PANOPTO)
 Sleep(2000) ;sleep 2 seconds
 WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
 
-ProgressSet(20, "Starting Chrome...")
+ProgressSet(30, "Starting Chrome...")
 
 ; Run Chrome application
 ; TODO: check return value
@@ -39,15 +74,41 @@ Sleep(2000) ;sleep 2 seconds
 WinMove("Chrome", "", @desktopwidth/2, 0, @desktopwidth/2, @desktopheight/2)
 ProcessWait("chrome.exe")
 
-ProgressSet(30, "Opening links...")
+ProgressSet(40, "Opening links...")
 
-; TODO: login (figure out javascript)
+;Look for distinctive blue text of "Host Log In" button
+;Get color of pixel position to check before mouse click
+$color = Hex(PixelGetColor(1546, 190), 6)
+If $color == "0164CF" Then
+	;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
+	MouseClick("left", 1546, 190)
+	;wait for page to load
+	Sleep(2000) ;sleep 2 seconds
+	;enter the login credentials
+	Send($ROOM & $BUILDING)
+	Send("{TAB}")
+	Send($WEBEX_PASSWORD)
+	Send("{ENTER}")
+Else
+	BlockInput(0)
+	MsgBox(0, "ERROR", "Unable to identify WebEx Host Log In button, check the resolution perhaps?")
+	BlockInput(1)
+EndIf
+
 Send('^t') ;CTRL + t, new tab
 Send($SESSION_MANAGER_LINK)
 Send("{ENTER}")
 
+WinActivate("Chrome")
+If IsDeclared("username") Then
+	Send($username)
+	Send("{TAB}")
+	Send($password)
+	Send("{ENTER}")
+EndIf
 
-ProgressSet(40, "Starting Firefox...")
+
+ProgressSet(55, "Starting Firefox...")
 
 ; Run Firefox application
 ; TODO: check return value
@@ -57,7 +118,7 @@ Sleep(2000) ;sleep 2 seconds
 WinMove("Firefox", "", 0, @desktopheight/2, @desktopwidth/2, (@desktopheight/2)-45)
 ProcessWait("firefox.exe")
 
-ProgressSet(50, "Setting filename...")
+ProgressSet(70, "Setting filename...")
 
 ;Get color of pixel position to check before mouse click
 Local $color = Hex(PixelGetColor(624, 178), 6)
@@ -65,20 +126,23 @@ If $color == "FFFFFF" Then
 	;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
 	MouseClick("left", 624, 178, 2)
 	Send("^a") ;CTRL + a, select all text
+	;Set Panopto file name
+	Send("ClassName Number Lecture XX: " & @MON & "-" & @MDAY & "-" & @YEAR)
 Else
+	BlockInput(0)
 	MsgBox(0, "ERROR", "Unable to identify Panopto box location, check the resolution perhaps?")
+	BlockInput(1)
 EndIf
 
-;Set Panopto file name
-Send("ClassName Number Lecture XX: " & @MON & "-" & @MDAY & "-" & @YEAR)
-
-ProgressSet(60, "Logging into Echo...")
+ProgressSet(80, "Logging into Echo...")
 
 WinActivate("Authentication")
 Send($ECHO_BOX_USERNAME)
 Send("{TAB}")
 Send($ECHO_BOX_PASSWORD)
 Send("{ENTER}")
+
+
 
 
 ; Enable user input from the mouse and keyboard.
