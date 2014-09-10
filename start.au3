@@ -3,6 +3,11 @@
 ;e.g. "howe"
 ;2nd - classroom number
 ;e.g. "1344"
+;3rd - instructor computer, fully qualified domain name
+;This can be found by going into the "properties" of the computer
+;e.g. "DBL057V1.engineering.iastate.edu"
+;4th - VNC launcher file (.vnc file ending)
+;e.g. "C:\Users\elocoder\Desktop\1344InstructorPC.vnc"
 
 ;https://www.autoitscript.com/autoit3/docs/keywords/include.htm
 #include "passwords.au3" ;ELO login passwords
@@ -11,10 +16,13 @@
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
 #include <EditConstants.au3>
+#include <MsgBoxConstants.au3>
 
 ;Constants
 Global Const $BUILDING = $CmdLine[1]
 Global Const $ROOM = $CmdLine[2]
+Global Const $INSTRUCTOR_ADDRESS = $CmdLine[3] ;fully qualified domain name
+Global Const $VNC_LAUNCHER = $CmdLine[4]
 Global Const $PANOPTO = "C:\Program Files (x86)\Panopto\Focus Recorder\Recorder.exe"
 Global Const $CHROME = "C:\Users\elocoder\AppData\Local\Google\Chrome\Application\chrome.exe"
 Global Const $FIREFOX = "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
@@ -51,20 +59,48 @@ While True
 WEnd
 
 ;https://www.autoitscript.com/autoit3/docs/functions/ProgressOn.htm
-ProgressOn("Startup", "Startup", "", @desktopwidth/2, @desktopheight/2)
+ProgressOn("Startup", "Startup", "", (@desktopwidth/2)-100, @desktopheight-175)
 
 ; Disable user input from the mouse and keyboard.
 BlockInput(1)
 
 ProgressSet(15, "Starting Panopto...")
 
-; Run Panopto application
-; TODO: check return value
-Run($PANOPTO)
-Sleep(2000) ;sleep 2 seconds
-WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
+If WinExists("Panopto Focus") Then
+	BlockInput(0)
+	$Panopto_MSG = MsgBox($MB_YESNO, "Panopto Open", "Panopto is already open, would you like to restart Panopto?")
+	If $Panopto_MSG = $IDYES Then ;clicked YES
+		;close Panopto
+		;https://www.autoitscript.com/autoit3/docs/functions/WinClose.htm
+		WinClose("Panopto Focus")
+		WinWaitClose("Panopto Focus")
+	EndIf
+	BlockInput(1)
+EndIf
+
+If Not WinExists("Panopto Focus") Then
+	; Run Panopto application
+	; TODO: check return value
+	Run($PANOPTO)
+	Sleep(2000) ;sleep 2 seconds
+	WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
+EndIf
 
 ProgressSet(30, "Starting Chrome...")
+
+If WinExists("Chrome") Then
+	BlockInput(0)
+	$Chrome_MSG = MsgBox($MB_YESNO, "Chrome Open", "Chrome is already open, would you like to restart Chrome?")
+	If $Chrome_MSG = $IDYES Then ;clicked YES
+		;Chrome can have many processes open, so we have to close them all
+		While ProcessExists("chrome.exe")
+			Local $PID = ProcessExists("chrome.exe")
+			ProcessClose($PID)
+			ProcessWaitClose($PID)
+		WEnd
+	EndIf
+	BlockInput(1)
+EndIf
 
 ; Run Chrome application
 ; TODO: check return value
@@ -110,6 +146,19 @@ EndIf
 
 ProgressSet(55, "Starting Firefox...")
 
+If WinExists("Firefox") Then
+	BlockInput(0)
+	$Firefox_MSG = MsgBox($MB_YESNO, "Firefox Open", "Firefox is already open, would you like to restart Firefox?")
+	If $Firefox_MSG = $IDYES Then ;clicked YES
+		While ProcessExists("firefox.exe")
+			Local $PID = ProcessExists("firefox.exe")
+			ProcessClose($PID)
+			ProcessWaitClose($PID)
+		WEnd
+	EndIf
+	BlockInput(1)
+EndIf
+
 ; Run Firefox application
 ; TODO: check return value
 ShellExecute($FIREFOX, $ECHO_LINK )
@@ -142,8 +191,23 @@ Send("{TAB}")
 Send($ECHO_BOX_PASSWORD)
 Send("{ENTER}")
 
+ProgressSet(90, "Launching VNC...")
 
-
+;http://www.autoitscript.com/forum/topic/131506-port-check-function/
+;https://www.autoitscript.com/autoit3/docs/functions/TCPNameToIP.htm
+TCPStartup()
+Local $TCP_socket = TCPConnect(TCPNameToIP($INSTRUCTOR_ADDRESS), 5900)
+TCPCloseSocket(5900)
+If $TCP_socket > 0 Then
+	;VNC test connection passed so let's try to open it
+	ShellExecute($VNC_LAUNCHER)
+	Sleep(1000) ;sleep 1 second
+	WinMove("TightVNC Viewer", "", @desktopwidth/2, @desktopheight/2, @desktopwidth/2, @desktopheight/2)
+Else
+	BlockInput(0)
+	MsgBox(0, "ERROR", "Unable to connect to VNC, check to make sure the instructor computer is turned on and logged in.")
+	BlockInput(1)
+EndIf
 
 ; Enable user input from the mouse and keyboard.
 BlockInput(0)
