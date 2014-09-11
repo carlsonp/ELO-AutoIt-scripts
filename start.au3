@@ -84,6 +84,12 @@ If Not WinExists("Panopto Focus") Then
 	Run($PANOPTO)
 	Sleep(2000) ;sleep 2 seconds
 	WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
+	;Check to see if quality is set to "High"
+	Local $color = Hex(PixelGetColor(82, 461), 6) ;get bluish radio item selection
+	If $color <> "48BAD7" Then ;<> is not equal to
+		MouseClick("left", 82, 461) ;click on "High" quality setting
+		MouseClick("left", 232, 460) ;click apply
+	EndIf
 EndIf
 
 ProgressSet(30, "Starting Chrome...")
@@ -114,7 +120,7 @@ ProgressSet(40, "Opening links...")
 
 ;Look for distinctive blue text of "Host Log In" button
 ;Get color of pixel position to check before mouse click
-$color = Hex(PixelGetColor(1546, 190), 6)
+Local $color = Hex(PixelGetColor(1546, 190), 6)
 If $color == "0164CF" Then
 	;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
 	MouseClick("left", 1546, 190)
