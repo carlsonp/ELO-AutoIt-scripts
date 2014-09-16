@@ -26,11 +26,14 @@ Global Const $VNC_LAUNCHER = $CmdLine[4]
 Global Const $PANOPTO = "C:\Program Files (x86)\Panopto\Focus Recorder\Recorder.exe"
 Global Const $CHROME = "C:\Users\elocoder\AppData\Local\Google\Chrome\Application\chrome.exe"
 Global Const $FIREFOX = "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
-Global Const $WEBEX_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=7"
+Global Const $MYWEBEX_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=10"
+Global Const $WEBEX_TRAINING_CENTER_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=7"
 Global Const $SESSION_MANAGER_LINK = "https://sws.elo.iastate.edu/session-manager/"
 Global Const $ECHO_LINK = "https://" & $BUILDING & $ROOM & "hd.engineering.iastate.edu:8443/advanced"
 ;Settings
 Opt("WinTitleMatchMode", 2) ;matches partial substrings when matching titles
+;https://www.autoitscript.com/trac/autoit/ticket/1573
+Opt("TCPTimeout", 1000) ;TCP timeout, currently not working in stable version of AutoIt?
 
 ;https://www.autoitscript.com/autoit3/docs/guiref/GUIRef.htm
 ;https://www.autoitscript.com/autoit3/docs/functions/GUICreate.htm
@@ -111,32 +114,28 @@ EndIf
 ; Run Chrome application
 ; TODO: check return value
 ;https://www.autoitscript.com/autoit3/docs/functions/ShellExecute.htm
-ShellExecute($CHROME, $WEBEX_LINK)
+ShellExecute($CHROME, $MYWEBEX_LINK)
 Sleep(2000) ;sleep 2 seconds
+;resize window
 WinMove("Chrome", "", @desktopwidth/2, 0, @desktopwidth/2, @desktopheight/2)
 ProcessWait("chrome.exe")
 
 ProgressSet(40, "Opening links...")
 
-;Look for distinctive blue text of "Host Log In" button
-;Get color of pixel position to check before mouse click
-Local $color = Hex(PixelGetColor(1546, 190), 6)
-If $color == "0164CF" Then
-	;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
-	MouseClick("left", 1546, 190)
-	;wait for page to load
-	Sleep(2000) ;sleep 2 seconds
-	;enter the login credentials
-	Send($ROOM & $BUILDING)
-	Send("{TAB}")
-	Send($WEBEX_PASSWORD)
-	Send("{ENTER}")
-Else
-	BlockInput(0)
-	MsgBox(0, "ERROR", "Unable to identify WebEx Host Log In button, check the resolution perhaps?")
-	BlockInput(1)
-EndIf
-
+;WebEx is annoying because the login page is not a distinct URL, it uses Javascript
+;Therefore, we have to try to go to a page that requires a login, login, and then go
+;to the training center page.
+Send($ROOM & $BUILDING)
+Send("{TAB}")
+Send($WEBEX_PASSWORD)
+;pause for a moment, not sure why this is needed, login doesn't work otherwise
+Sleep(200)
+Send("{ENTER}")
+Sleep(2000) ;wait for page to load
+Send("{F6}") ;highlight URL address bar
+Send($WEBEX_TRAINING_CENTER_LINK)
+Send("{ENTER}")
+Sleep(2000) ;wait for page to load
 Send('^t') ;CTRL + t, new tab
 Send($SESSION_MANAGER_LINK)
 Send("{ENTER}")
