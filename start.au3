@@ -45,6 +45,7 @@ Local $username_input = GUICtrlCreateInput("", 80, 30, 120, 20)
 GUICtrlCreateLabel("Password:", 10, 60)
 Local $password_input = GUICtrlCreateInput("", 80, 60, 120, 20, $ES_PASSWORD)
 Local $idLogin = GUICtrlCreateButton("Login", 70, 100, 60)
+GUICtrlSetState($idLogin, $GUI_DEFBUTTON)
 GUISetState(@SW_SHOW, $gui)
 
 ;Loop until the user enters session manager login info or just exits
@@ -72,7 +73,7 @@ ProgressSet(15, "Starting Panopto...")
 If WinExists("Panopto Focus") Then
 	BlockInput(0)
 	$Panopto_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Panopto Open", "Panopto is already open, would you like to restart Panopto?")
-	If $Panopto_MSG = $IDYES Then ;clicked YES
+	If $Panopto_MSG == $IDYES Then ;clicked YES
 		;close Panopto
 		;https://www.autoitscript.com/autoit3/docs/functions/WinClose.htm
 		WinClose("Panopto Focus")
@@ -122,14 +123,14 @@ ProgressSet(30, "Starting Chrome...")
 If WinExists("Chrome") Then
 	BlockInput(0)
 	$Chrome_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Chrome Open", "Chrome is already open, would you like to restart Chrome?")
-	If $Chrome_MSG = $IDYES Then ;clicked YES
+	If $Chrome_MSG == $IDYES Then ;clicked YES
 		;Chrome can have many processes open, so we have to close them all
 		While ProcessExists("chrome.exe")
 			Local $PID = ProcessExists("chrome.exe")
 			ProcessClose($PID)
 			ProcessWaitClose($PID)
 		WEnd
-	ElseIf $Chrome_MSG = $IDNO Then ;clicked NO
+	ElseIf $Chrome_MSG == $IDNO Then ;clicked NO
 		;open up a new tab for the upcoming content
 		WinActivate("Chrome")
 		Send('^t') ;CTRL + t, new tab
@@ -203,7 +204,7 @@ ProgressSet(55, "Starting Firefox...")
 If WinExists("Firefox") Then
 	BlockInput(0)
 	$Firefox_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Firefox Open", "Firefox is already open, would you like to restart Firefox?")
-	If $Firefox_MSG = $IDYES Then ;clicked YES
+	If $Firefox_MSG == $IDYES Then ;clicked YES
 		While ProcessExists("firefox.exe")
 			Local $PID = ProcessExists("firefox.exe")
 			ProcessClose($PID)
