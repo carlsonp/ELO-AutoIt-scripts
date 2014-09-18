@@ -61,17 +61,17 @@ While True
 	EndSwitch
 WEnd
 
-;https://www.autoitscript.com/autoit3/docs/functions/ProgressOn.htm
-ProgressOn("Startup", "Startup", "", (@desktopwidth/2)-100, @desktopheight-175)
-
 ; Disable user input from the mouse and keyboard.
 BlockInput(1)
+
+;https://www.autoitscript.com/autoit3/docs/functions/ProgressOn.htm
+ProgressOn("Startup", "Startup", "", (@desktopwidth/2)-100, @desktopheight-175)
 
 ProgressSet(15, "Starting Panopto...")
 
 If WinExists("Panopto Focus") Then
 	BlockInput(0)
-	$Panopto_MSG = MsgBox($MB_YESNO, "Panopto Open", "Panopto is already open, would you like to restart Panopto?")
+	$Panopto_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Panopto Open", "Panopto is already open, would you like to restart Panopto?")
 	If $Panopto_MSG = $IDYES Then ;clicked YES
 		;close Panopto
 		;https://www.autoitscript.com/autoit3/docs/functions/WinClose.htm
@@ -86,12 +86,34 @@ If Not WinExists("Panopto Focus") Then
 	; TODO: check return value
 	Run($PANOPTO)
 	Sleep(2000) ;sleep 2 seconds
+	WinActivate("Panopto Focus")
+EndIf
+
+If WinExists("Panopto Focus") Then
+	WinActivate("Panopto Focus")
 	WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
-	;Check to see if quality is set to "High"
-	Local $color = Hex(PixelGetColor(82, 461), 6) ;get bluish radio item selection
-	If $color <> "48BAD7" Then ;<> is not equal to
-		MouseClick("left", 82, 461) ;click on "High" quality setting
-		MouseClick("left", 232, 460) ;click apply
+	;check to make sure Panopto isn't currently recording
+	Local $color = Hex(PixelGetColor(197, 165), 6) ;get green of pause button
+	If $color <> "329932" Then
+		;Check to see if quality is set to "High"
+		Local $color = Hex(PixelGetColor(82, 461), 6) ;get bluish radio item selection
+		If $color <> "48BAD7" Then ;<> is not equal to
+			MouseClick("left", 82, 461) ;click on "High" quality setting
+			MouseClick("left", 232, 460) ;click apply
+		EndIf
+		;Get color of pixel position to check before mouse click
+		Local $color = Hex(PixelGetColor(624, 178), 6)
+		If $color == "FFFFFF" Then
+			;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
+			MouseClick("left", 624, 178, 2)
+			Send("^a") ;CTRL + a, select all text
+			;Set Panopto file name
+			Send("ClassName Number Lecture XX: " & @MON & "-" & @MDAY & "-" & @YEAR)
+		Else
+			BlockInput(0)
+			MsgBox($MB_ICONERROR, "ERROR", "Unable to identify Panopto box location, check the resolution perhaps?")
+			BlockInput(1)
+		EndIf
 	EndIf
 EndIf
 
@@ -99,7 +121,7 @@ ProgressSet(30, "Starting Chrome...")
 
 If WinExists("Chrome") Then
 	BlockInput(0)
-	$Chrome_MSG = MsgBox($MB_YESNO, "Chrome Open", "Chrome is already open, would you like to restart Chrome?")
+	$Chrome_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Chrome Open", "Chrome is already open, would you like to restart Chrome?")
 	If $Chrome_MSG = $IDYES Then ;clicked YES
 		;Chrome can have many processes open, so we have to close them all
 		While ProcessExists("chrome.exe")
@@ -107,53 +129,80 @@ If WinExists("Chrome") Then
 			ProcessClose($PID)
 			ProcessWaitClose($PID)
 		WEnd
+	ElseIf $Chrome_MSG = $IDNO Then ;clicked NO
+		;open up a new tab for the upcoming content
+		WinActivate("Chrome")
+		Send('^t') ;CTRL + t, new tab
+		Send($MYWEBEX_LINK)
+		Send("{ENTER}")
+		Sleep(2000)
 	EndIf
 	BlockInput(1)
 EndIf
 
-; Run Chrome application
-; TODO: check return value
-;https://www.autoitscript.com/autoit3/docs/functions/ShellExecute.htm
-ShellExecute($CHROME, $MYWEBEX_LINK)
-Sleep(2000) ;sleep 2 seconds
-;resize window
-WinMove("Chrome", "", @desktopwidth/2, 0, @desktopwidth/2, @desktopheight/2)
-ProcessWait("chrome.exe")
+If Not WinExists("Chrome") Then
+	; Run Chrome application
+	; TODO: check return value
+	;https://www.autoitscript.com/autoit3/docs/functions/ShellExecute.htm
+	ShellExecute($CHROME, $MYWEBEX_LINK)
+	Sleep(2000) ;sleep 2 seconds
+	ProcessWait("chrome.exe")
+EndIf
+
+If WinExists("Chrome") Then
+	;resize window
+	WinMove("Chrome", "", @desktopwidth*0.3, 0, @desktopwidth-(@desktopwidth*0.3), @desktopheight/2)
+	WinActivate("Chrome")
+EndIf
 
 ProgressSet(40, "Opening links...")
 
-;WebEx is annoying because the login page is not a distinct URL, it uses Javascript
-;Therefore, we have to try to go to a page that requires a login, login, and then go
-;to the training center page.
-Send($ROOM & $BUILDING)
-Send("{TAB}")
-Send($WEBEX_PASSWORD)
-;pause for a moment, not sure why this is needed, login doesn't work otherwise
-Sleep(200)
-Send("{ENTER}")
-Sleep(2000) ;wait for page to load
-Send("{F6}") ;highlight URL address bar
-Send($WEBEX_TRAINING_CENTER_LINK)
-Send("{ENTER}")
-Sleep(2000) ;wait for page to load
-Send('^t') ;CTRL + t, new tab
-Send($SESSION_MANAGER_LINK)
-Send("{ENTER}")
-
-WinActivate("Chrome")
-If IsDeclared("username") Then
-	Send($username)
+If WinExists("Chrome") Then
+	;WebEx is annoying because the login page is not a distinct URL, it uses Javascript
+	;Therefore, we have to try to go to a page that requires a login, login, and then go
+	;to the training center page.
+	WinActivate("Chrome")
+	Send($ROOM & $BUILDING)
 	Send("{TAB}")
-	Send($password)
+	Send($WEBEX_PASSWORD)
+	;pause for a moment, not sure why this is needed, login doesn't work otherwise
+	Sleep(200)
 	Send("{ENTER}")
-EndIf
+	Sleep(2000) ;wait for page to load
+	Send("{F6}") ;highlight URL address bar
+	Send($WEBEX_TRAINING_CENTER_LINK)
+	Send("{ENTER}")
 
+	Send('^t') ;CTRL + t, new tab
+	Send($SESSION_MANAGER_LINK)
+	Send("{ENTER}")
+	Sleep(2000)
+
+	If IsDeclared("username") AND $username <> "" Then
+		;Get the URL to see if we're logged in or not
+		Send("{F6}")
+		Send("^c") ;CTRL + c - copy URL text
+		;https://www.autoitscript.com/autoit3/docs/functions/ClipGet.htm
+		Local $url = ClipGet()
+		If $url == "https://weblogin.iastate.edu/cgi-bin/index.cgi" Then
+			;reload the page so we get the cursor in the login box
+			Send("{F6}")
+			Send($SESSION_MANAGER_LINK)
+			Send("{ENTER}")
+			Sleep(2000)
+			Send($username)
+			Send("{TAB}")
+			Send($password)
+			Send("{ENTER}")
+		EndIf
+	EndIf
+EndIf
 
 ProgressSet(55, "Starting Firefox...")
 
 If WinExists("Firefox") Then
 	BlockInput(0)
-	$Firefox_MSG = MsgBox($MB_YESNO, "Firefox Open", "Firefox is already open, would you like to restart Firefox?")
+	$Firefox_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Firefox Open", "Firefox is already open, would you like to restart Firefox?")
 	If $Firefox_MSG = $IDYES Then ;clicked YES
 		While ProcessExists("firefox.exe")
 			Local $PID = ProcessExists("firefox.exe")
@@ -164,54 +213,65 @@ If WinExists("Firefox") Then
 	BlockInput(1)
 EndIf
 
-; Run Firefox application
-; TODO: check return value
-ShellExecute($FIREFOX, $ECHO_LINK )
-Sleep(2000) ;sleep 2 seconds
-;subtraction is to adjust slightly so it's not below the windows taskbar
-WinMove("Firefox", "", 0, @desktopheight/2, @desktopwidth/2, (@desktopheight/2)-45)
-ProcessWait("firefox.exe")
+If Not WinExists("Firefox") Then
+	; Run Firefox application
+	; TODO: check return value
+	ShellExecute($FIREFOX, $ECHO_LINK)
+	Sleep(2000) ;sleep 2 seconds
+	ProcessWait("firefox.exe")
+EndIf
 
-ProgressSet(70, "Setting filename...")
-
-;Get color of pixel position to check before mouse click
-Local $color = Hex(PixelGetColor(624, 178), 6)
-If $color == "FFFFFF" Then
-	;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
-	MouseClick("left", 624, 178, 2)
-	Send("^a") ;CTRL + a, select all text
-	;Set Panopto file name
-	Send("ClassName Number Lecture XX: " & @MON & "-" & @MDAY & "-" & @YEAR)
-Else
-	BlockInput(0)
-	MsgBox(0, "ERROR", "Unable to identify Panopto box location, check the resolution perhaps?")
-	BlockInput(1)
+If WinExists("Firefox") Then
+	WinActivate("Firefox")
+	;subtraction is to adjust slightly so it's not below the windows taskbar
+	WinMove("Firefox", "", 0, @desktopheight/2, @desktopwidth/2, (@desktopheight/2)-45)
 EndIf
 
 ProgressSet(80, "Logging into Echo...")
 
-WinActivate("Authentication")
-Send($ECHO_BOX_USERNAME)
-Send("{TAB}")
-Send($ECHO_BOX_PASSWORD)
-Send("{ENTER}")
+If Not WinExists("Authentication") Then
+	;Firefox was already open, so we open a new tab for Echo
+	WinActivate("Firefox")
+	Send('^t') ;CTRL + t, new tab
+	Send($ECHO_LINK)
+	Send("{ENTER}")
+	Sleep(1000)
+EndIf
+
+If WinExists("Authentication") Then
+	WinActivate("Authentication")
+	Send($ECHO_BOX_USERNAME)
+	Send("{TAB}")
+	Send($ECHO_BOX_PASSWORD)
+	Send("{ENTER}")
+EndIf
 
 ProgressSet(90, "Launching VNC...")
 
-;http://www.autoitscript.com/forum/topic/131506-port-check-function/
-;https://www.autoitscript.com/autoit3/docs/functions/TCPNameToIP.htm
-TCPStartup()
-Local $TCP_socket = TCPConnect(TCPNameToIP($INSTRUCTOR_ADDRESS), 5900)
-TCPCloseSocket(5900)
-If $TCP_socket > 0 Then
-	;VNC test connection passed so let's try to open it
-	ShellExecute($VNC_LAUNCHER)
-	Sleep(1000) ;sleep 1 second
+If Not WinExists("TightVNC Viewer") Then
+	;http://www.autoitscript.com/forum/topic/131506-port-check-function/
+	;https://www.autoitscript.com/autoit3/docs/functions/TCPNameToIP.htm
+	TCPStartup()
+	Local $TCP_socket = TCPConnect(TCPNameToIP($INSTRUCTOR_ADDRESS), 5900)
+	TCPCloseSocket(5900)
+	If $TCP_socket > 0 Then
+		;VNC test connection passed so let's try to open it
+		ShellExecute($VNC_LAUNCHER)
+		Sleep(1000) ;sleep 1 second
+	Else
+		BlockInput(0)
+		MsgBox($MB_ICONERROR, "ERROR", "Unable to connect to VNC, check to make sure the instructor computer is turned on and logged in.")
+		BlockInput(1)
+	EndIf
+EndIf
+
+If WinExists("TightVNC Viewer") Then
 	WinMove("TightVNC Viewer", "", @desktopwidth/2, @desktopheight/2, @desktopwidth/2, @desktopheight/2)
-Else
-	BlockInput(0)
-	MsgBox(0, "ERROR", "Unable to connect to VNC, check to make sure the instructor computer is turned on and logged in.")
-	BlockInput(1)
+	WinActivate("TightVNC Viewer")
+EndIf
+
+If WinExists("Chrome") Then
+	WinActivate("Chrome") ;set focus to Chrome
 EndIf
 
 ; Enable user input from the mouse and keyboard.
