@@ -38,12 +38,12 @@ Opt("TCPTimeout", 1000) ;TCP timeout, currently not working in stable version of
 ;https://www.autoitscript.com/autoit3/docs/guiref/GUIRef.htm
 ;https://www.autoitscript.com/autoit3/docs/functions/GUICreate.htm
 ;https://www.autoitscript.com/autoit3/docs/functions/GUICtrlCreateInput.htm
-Local $gui = GUICreate("Session Manager Login", 300, 300) ;by default it's centered
+Local $gui = GUICreate("Session Manager Login", 350, 200) ;by default it's centered
 GUICtrlCreateLabel("Enter your session manager login", 10, 10)
 GUICtrlCreateLabel("ISU NetID:", 10, 30)
-Local $username_input = GUICtrlCreateInput("", 80, 30, 120, 20)
+Local $username_input = GUICtrlCreateInput("", 80, 30, 250, 20)
 GUICtrlCreateLabel("Password:", 10, 60)
-Local $password_input = GUICtrlCreateInput("", 80, 60, 120, 20, $ES_PASSWORD)
+Local $password_input = GUICtrlCreateInput("", 80, 60, 250, 20, $ES_PASSWORD)
 Local $idLogin = GUICtrlCreateButton("Login", 70, 100, 60)
 GUICtrlSetState($idLogin, $GUI_DEFBUTTON)
 GUISetState(@SW_SHOW, $gui)
