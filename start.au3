@@ -45,6 +45,7 @@ Local $username_input = GUICtrlCreateInput("", 80, 30, 250, 20)
 GUICtrlCreateLabel("Password:", 10, 60)
 Local $password_input = GUICtrlCreateInput("", 80, 60, 250, 20, $ES_PASSWORD)
 Local $idLogin = GUICtrlCreateButton("Login", 70, 100, 60)
+Local $idExitButton = GUICtrlCreateButton("Quit Without Launching", 160, 160, 160)
 GUICtrlSetState($idLogin, $GUI_DEFBUTTON)
 GUISetState(@SW_SHOW, $gui)
 
@@ -59,6 +60,9 @@ While True
 			$password = GUICtrlRead($password_input)
 			GUIDelete($gui)
 			ExitLoop
+		Case $idExitButton
+			GUIDelete($gui)
+			Exit
 	EndSwitch
 WEnd
 
