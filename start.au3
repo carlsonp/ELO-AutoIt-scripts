@@ -1,5 +1,5 @@
 ;Commandline parameters to pass in
-;1st - building (make sure it's lowercase)
+;1st - building
 ;e.g. "howe"
 ;2nd - classroom number
 ;e.g. "1344"
@@ -11,6 +11,10 @@
 ;5th - Echo link override (optional)
 ;	If not used, just put "none" and the link will be constructed from the $BUILDING and $ROOM values
 ;e.g. "http://1.2.3.4:8443/advanced" - to provide an explicit link
+;6th - Run local Pantopto
+;	Panopto should usually always run on the encoder computer but you can
+;	turn this off by setting it to "False".
+;e.g. "True" or "False"
 
 ;https://www.autoitscript.com/autoit3/docs/keywords/include.htm
 #include "passwords.au3" ;ELO login passwords
@@ -22,11 +26,16 @@
 #include <MsgBoxConstants.au3>
 
 ;Constants
-Global Const $BUILDING = $CmdLine[1]
+Global Const $BUILDING = StringLower($CmdLine[1])
 Global Const $ROOM = $CmdLine[2]
 Global Const $INSTRUCTOR_ADDRESS = $CmdLine[3] ;fully qualified domain name
 Global Const $VNC_LAUNCHER = $CmdLine[4]
 Global Const $ECHO_OVERRIDE = $CmdLine[5]
+If StringLower($CmdLine[6]) == "false" Then
+	Global Const $RUN_LOCAL_PANOPTO = False
+Else
+	Global Const $RUN_LOCAL_PANOPTO = True
+EndIf
 Global Const $PANOPTO = "C:\Program Files (x86)\Panopto\Focus Recorder\Recorder.exe"
 Global Const $CHROME = "C:\Users\elocoder\AppData\Local\Google\Chrome\Application\chrome.exe"
 Global Const $FIREFOX = "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
@@ -80,52 +89,54 @@ BlockInput(1)
 ;https://www.autoitscript.com/autoit3/docs/functions/ProgressOn.htm
 ProgressOn("Startup", "Startup", "", (@desktopwidth/2)-100, @desktopheight-175)
 
-ProgressSet(15, "Starting Panopto...")
+If $RUN_LOCAL_PANOPTO Then
+	ProgressSet(15, "Starting Panopto...")
 
-If WinExists("Panopto Focus") Then
-	BlockInput(0)
-	$Panopto_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Panopto Open", "Panopto is already open, would you like to restart Panopto?")
-	If $Panopto_MSG == $IDYES Then ;clicked YES
-		;close Panopto
-		;https://www.autoitscript.com/autoit3/docs/functions/WinClose.htm
-		WinClose("Panopto Focus")
-		WinWaitClose("Panopto Focus")
-	EndIf
-	BlockInput(1)
-EndIf
-
-If Not WinExists("Panopto Focus") Then
-	; Run Panopto application
-	; TODO: check return value
-	Run($PANOPTO)
-	Sleep(2000) ;sleep 2 seconds
-	WinActivate("Panopto Focus")
-EndIf
-
-If WinExists("Panopto Focus") Then
-	WinActivate("Panopto Focus")
-	WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
-	;check to make sure Panopto isn't currently recording
-	Local $color = Hex(PixelGetColor(197, 165), 6) ;get green of pause button
-	If $color <> "329932" Then
-		;Check to see if quality is set to "High"
-		Local $color = Hex(PixelGetColor(82, 461), 6) ;get bluish radio item selection
-		If $color <> "48BAD7" Then ;<> is not equal to
-			MouseClick("left", 82, 461) ;click on "High" quality setting
-			MouseClick("left", 232, 460) ;click apply
+	If WinExists("Panopto Focus") Then
+		BlockInput(0)
+		$Panopto_MSG = MsgBox($MB_YESNO+$MB_ICONQUESTION, "Panopto Open", "Panopto is already open, would you like to restart Panopto?")
+		If $Panopto_MSG == $IDYES Then ;clicked YES
+			;close Panopto
+			;https://www.autoitscript.com/autoit3/docs/functions/WinClose.htm
+			WinClose("Panopto Focus")
+			WinWaitClose("Panopto Focus")
 		EndIf
-		;Get color of pixel position to check before mouse click
-		Local $color = Hex(PixelGetColor(624, 178), 6)
-		If $color == "FFFFFF" Then
-			;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
-			MouseClick("left", 624, 178, 2)
-			Send("^a") ;CTRL + a, select all text
-			;Set Panopto file name
-			Send("ClassName Number Lecture XX: " & @MON & "-" & @MDAY & "-" & @YEAR)
-		Else
-			BlockInput(0)
-			MsgBox($MB_ICONERROR, "ERROR", "Unable to identify Panopto box location, check the resolution perhaps?")
-			BlockInput(1)
+		BlockInput(1)
+	EndIf
+
+	If Not WinExists("Panopto Focus") Then
+		; Run Panopto application
+		; TODO: check return value
+		Run($PANOPTO)
+		Sleep(2000) ;sleep 2 seconds
+		WinActivate("Panopto Focus")
+	EndIf
+
+	If WinExists("Panopto Focus") Then
+		WinActivate("Panopto Focus")
+		WinMove("Panopto Focus", "", 0, 0, @desktopwidth/2, @desktopheight/2)
+		;check to make sure Panopto isn't currently recording
+		Local $color = Hex(PixelGetColor(197, 165), 6) ;get green of pause button
+		If $color <> "329932" Then
+			;Check to see if quality is set to "High"
+			Local $color = Hex(PixelGetColor(82, 461), 6) ;get bluish radio item selection
+			If $color <> "48BAD7" Then ;<> is not equal to
+				MouseClick("left", 82, 461) ;click on "High" quality setting
+				MouseClick("left", 232, 460) ;click apply
+			EndIf
+			;Get color of pixel position to check before mouse click
+			Local $color = Hex(PixelGetColor(624, 178), 6)
+			If $color == "FFFFFF" Then
+				;https://www.autoitscript.com/autoit3/docs/functions/MouseClick.htm
+				MouseClick("left", 624, 178, 2)
+				Send("^a") ;CTRL + a, select all text
+				;Set Panopto file name
+				Send("ClassName Number Lecture XX: " & @MON & "-" & @MDAY & "-" & @YEAR)
+			Else
+				BlockInput(0)
+				MsgBox($MB_ICONERROR, "ERROR", "Unable to identify Panopto box location, check the resolution perhaps?")
+				BlockInput(1)
+			EndIf
 		EndIf
 	EndIf
 EndIf
