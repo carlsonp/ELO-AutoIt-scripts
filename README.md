@@ -1,7 +1,17 @@
 ELO-AutoIt-scripts
 ==================
 
-[AutoIt](https://www.autoitscript.com/site/autoit/) scripts for [ISU ELO](http://www.elo.iastate.edu/101/).
+[AutoIt](https://www.autoitscript.com/site/autoit/) scripts for [ISU ELO](http://www.elo.iastate.edu/101/) classrooms.
+
+### Setup
+
+* Install [AutoIt](https://www.autoitscript.com/site/autoit/) on the encoder computer if it's not already installed.
+* Download these script files.  AutoIt scripts end with .au3 extension.
+* Edit the `passwords.au3` file and set the appropriate passwords.
+* Create a shortcut to the `start.au3` file and put it someplace easy to access like the desktop.
+* Open up the `start.au3` script and look at the top of the file.  This has the parameters that need to be passed into the script.
+* Edit the shortcut and enter the appropriate parameter values at the end of the target line.
+* Run the shortcut and enjoy the automated startup! :)
 
 
 ### ELO Classrooms (as of 9/8/2014)
