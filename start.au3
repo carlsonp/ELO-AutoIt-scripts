@@ -10,7 +10,7 @@
 ;e.g. "C:\Users\elocoder\Desktop\1344InstructorPC.vnc"
 ;5th - Echo link override (optional)
 ;	If not used, just put "none" and the link will be constructed from the $BUILDING and $ROOM values
-;e.g. "http://1.2.3.4:8443/advanced" - to not use 
+;e.g. "http://1.2.3.4:8443/advanced" - to provide an explicit link
 
 ;https://www.autoitscript.com/autoit3/docs/keywords/include.htm
 #include "passwords.au3" ;ELO login passwords
