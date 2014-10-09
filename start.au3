@@ -8,6 +8,9 @@
 ;e.g. "DBL057V1.engineering.iastate.edu"
 ;4th - VNC launcher file (.vnc file ending)
 ;e.g. "C:\Users\elocoder\Desktop\1344InstructorPC.vnc"
+;5th - Echo link override (optional)
+;	If not used, just put "none" and the link will be constructed from the $BUILDING and $ROOM values
+;e.g. "http://1.2.3.4:8443/advanced" - to not use 
 
 ;https://www.autoitscript.com/autoit3/docs/keywords/include.htm
 #include "passwords.au3" ;ELO login passwords
@@ -23,13 +26,18 @@ Global Const $BUILDING = $CmdLine[1]
 Global Const $ROOM = $CmdLine[2]
 Global Const $INSTRUCTOR_ADDRESS = $CmdLine[3] ;fully qualified domain name
 Global Const $VNC_LAUNCHER = $CmdLine[4]
+Global Const $ECHO_OVERRIDE = $CmdLine[5]
 Global Const $PANOPTO = "C:\Program Files (x86)\Panopto\Focus Recorder\Recorder.exe"
 Global Const $CHROME = "C:\Users\elocoder\AppData\Local\Google\Chrome\Application\chrome.exe"
 Global Const $FIREFOX = "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
 Global Const $MYWEBEX_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=10"
 Global Const $WEBEX_TRAINING_CENTER_LINK = "https://iowastate.webex.com/mw0401l/mywebex/default.do?siteurl=iowastate&service=7"
 Global Const $SESSION_MANAGER_LINK = "https://sws.elo.iastate.edu/session-manager/"
-Global Const $ECHO_LINK = "https://" & $BUILDING & $ROOM & "hd.engineering.iastate.edu:8443/advanced"
+If StringLeft($ECHO_OVERRIDE, 4) == "http" Then
+	Global Const $ECHO_LINK = $ECHO_OVERRIDE
+Else
+	Global Const $ECHO_LINK = "https://" & $BUILDING & $ROOM & "hd.engineering.iastate.edu:8443/advanced"
+EndIf
 ;Settings
 Opt("WinTitleMatchMode", 2) ;matches partial substrings when matching titles
 ;https://www.autoitscript.com/trac/autoit/ticket/1573
